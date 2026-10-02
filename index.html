@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>응원 메시지</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      padding: 24px;
+
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        "Noto Sans KR",
+        Arial,
+        sans-serif;
+
+      background: #f5f7fb;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 620px;
+
+      background: #ffffff;
+
+      padding: 32px;
+
+      border-radius: 18px;
+
+      box-shadow:
+        0 8px 30px rgba(0, 0, 0, 0.08);
+    }
+
+    h1 {
+      margin: 0 0 8px;
+
+      text-align: center;
+
+      font-size: 30px;
+      font-weight: 700;
+    }
+
+    .description {
+      margin: 0 0 28px;
+
+      text-align: center;
+
+      color: #666666;
+
+      font-size: 15px;
+    }
+
+    .field {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+
+      margin-bottom: 8px;
+
+      font-size: 15px;
+      font-weight: 700;
+
+      color: #333333;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+
+      padding: 13px 14px;
+
+      border: 1px solid #d9dce3;
+      border-radius: 9px;
+
+      background: #ffffff;
+
+      font-family: inherit;
+      font-size: 15px;
+
+      outline: none;
+
+      transition:
+        border-color 0.2s,
+        box-shadow 0.2s;
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: #4285f4;
+
+      box-shadow:
+        0 0 0 3px rgba(66, 133, 244, 0.12);
+    }
+
+    textarea {
+      min-height: 170px;
+
+      resize: vertical;
+
+      line-height: 1.6;
+    }
+
+    .count {
+      margin-top: 6px;
+
+      text-align: right;
+
+      color: #888888;
+
+      font-size: 13px;
+    }
+
+    button {
+      width: 100%;
+
+      padding: 14px;
+
+      border: 0;
+      border-radius: 9px;
+
+      background: #4285f4;
+
+      color: #ffffff;
+
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 700;
+
+      cursor: pointer;
+
+      transition:
+        background 0.2s,
+        transform 0.1s;
+    }
+
+    button:hover {
+      background: #3367d6;
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    button:disabled {
+      background: #aaaaaa;
+
+      cursor: wait;
+
+      transform: none;
+    }
+
+    #result {
+      display: none;
+
+      margin-top: 16px;
+
+      padding: 12px 14px;
+
+      border-radius: 9px;
+
+      text-align: center;
+
+      font-size: 14px;
+
+      line-height: 1.5;
+    }
+
+    #result.success {
+      display: block;
+
+      background: #e8f5e9;
+
+      color: #2e7d32;
+    }
+
+    #result.error {
+      display: block;
+
+      background: #ffebee;
+
+      color: #c62828;
+    }
+
+    @media (max-width: 480px) {
+      body {
+        padding: 16px;
+      }
+
+      .card {
+        padding: 24px 20px;
+      }
+
+      h1 {
+        font-size: 26px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <main class="card">
+
+    <h1>응원 메시지</h1>
+
+    <p class="description">
+      응원의 메시지를 남겨주세요!
+    </p>
+
+    <form id="messageForm">
+
+      <!-- 별명 -->
+      <div class="field">
+
+        <label for="nickname">
+          별명
+        </label>
+
+        <input
+          type="text"
+          id="nickname"
+          name="nickname"
+          maxlength="30"
+          placeholder="별명을 입력해주세요."
+          autocomplete="nickname"
+          required
+        >
+
+      </div>
+
+
+      <!-- 응원 메시지 -->
+      <div class="field">
+
+        <label for="message">
+          응원 메시지
+        </label>
+
+        <textarea
+          id="message"
+          name="message"
+          maxlength="500"
+          placeholder="응원 메시지를 입력해주세요."
+          required
+        ></textarea>
+
+        <div class="count">
+          <span id="messageCount">0</span> / 500
+        </div>
+
+      </div>
+
+
+      <!-- 전송 버튼 -->
+      <button
+        id="submitButton"
+        type="submit"
+      >
+        응원 메시지 보내기
+      </button>
+
+    </form>
+
+
+    <!-- 결과 메시지 -->
+    <div
+      id="result"
+      aria-live="polite"
+    ></div>
+
+  </main>
+
+
+  <script>
+
+    /*
+     * Google Apps Script 서버 주소
+     *
+     * 사용자가 제공한 doPost(e) 서버입니다.
+     */
+    const SERVER_URL =
+      'https://script.google.com/macros/s/AKfycbyKmdZA80p0I_uNuhbiljkndM2ZPvAdeTS3dH0yfzvU2ywv8zIDLy1DyhJYUnExMwTGiw/exec';
+
+
+    /*
+     * HTML 요소 가져오기
+     */
+    const form =
+      document.getElementById('messageForm');
+
+    const nicknameInput =
+      document.getElementById('nickname');
+
+    const messageInput =
+      document.getElementById('message');
+
+    const submitButton =
+      document.getElementById('submitButton');
+
+    const messageCount =
+      document.getElementById('messageCount');
+
+    const result =
+      document.getElementById('result');
+
+
+    /*
+     * 응원 메시지 글자 수 표시
+     */
+    messageInput.addEventListener(
+      'input',
+      function () {
+
+        messageCount.textContent =
+          messageInput.value.length;
+
+      }
+    );
+
+
+    /*
+     * 결과 메시지 표시 함수
+     */
+    function showResult(message, success) {
+
+      result.textContent = message;
+
+      result.className =
+        success
+          ? 'success'
+          : 'error';
+
+    }
+
+
+    /*
+     * 폼 제출
+     */
+    form.addEventListener(
+      'submit',
+      async function (event) {
+
+        /*
+         * 기본 폼 제출 방지
+         */
+        event.preventDefault();
+
+
+        /*
+         * 입력값 가져오기
+         */
+        const nickname =
+          nicknameInput.value.trim();
+
+        const message =
+          messageInput.value.trim();
+
+
+        /*
+         * 별명 확인
+         */
+        if (!nickname) {
+
+          showResult(
+            '별명을 입력해주세요.',
+            false
+          );
+
+          nicknameInput.focus();
+
+          return;
+        }
+
+
+        /*
+         * 메시지 확인
+         */
+        if (!message) {
+
+          showResult(
+            '응원 메시지를 입력해주세요.',
+            false
+          );
+
+          messageInput.focus();
+
+          return;
+        }
+
+
+        /*
+         * 글자 수 확인
+         */
+        if (nickname.length > 30) {
+
+          showResult(
+            '별명은 30자 이하로 입력해주세요.',
+            false
+          );
+
+          nicknameInput.focus();
+
+          return;
+        }
+
+
+        if (message.length > 500) {
+
+          showResult(
+            '응원 메시지는 500자 이하로 입력해주세요.',
+            false
+          );
+
+          messageInput.focus();
+
+          return;
+        }
+
+
+        /*
+         * 전송 중 상태
+         */
+        submitButton.disabled = true;
+
+        submitButton.textContent =
+          '전송 중...';
+
+        result.className = '';
+
+
+        try {
+
+          /*
+           * Google Apps Script로 POST 요청
+           *
+           * Content-Type을 text/plain으로 보내면
+           * Google Apps Script Web App에서
+           * JSON 내용을 안정적으로 받을 수 있습니다.
+           */
+          const response =
+            await fetch(
+              SERVER_URL,
+              {
+                method: 'POST',
+
+                headers: {
+                  'Content-Type':
+                    'text/plain;charset=utf-8'
+                },
+
+                body:
+                  JSON.stringify({
+                    nickname: nickname,
+                    message: message
+                  })
+              }
+            );
+
+
+          /*
+           * 서버 응답을 JSON으로 변환
+           */
+          const data =
+            await response.json();
+
+
+          /*
+           * 성공
+           */
+          if (data.success) {
+
+            showResult(
+              '응원 메시지가 등록되었습니다!',
+              true
+            );
+
+
+            /*
+             * 입력창 초기화
+             */
+            form.reset();
+
+
+            /*
+             * 글자 수 초기화
+             */
+            messageCount.textContent =
+              '0';
+
+          }
+
+          /*
+           * 서버에서 실패 응답
+           */
+          else {
+
+            showResult(
+              data.message ||
+              '등록에 실패했습니다.',
+              false
+            );
+
+          }
+
+        }
+
+        /*
+         * 네트워크 오류
+         */
+        catch (error) {
+
+          console.error(
+            '응원 메시지 전송 오류:',
+            error
+          );
+
+
+          showResult(
+            '서버와 연결할 수 없습니다. Apps Script 웹 앱 배포 설정을 확인해주세요.',
+            false
+          );
+
+        }
+
+
+        /*
+         * 버튼 원래 상태로 복구
+         */
+        finally {
+
+          submitButton.disabled = false;
+
+          submitButton.textContent =
+            '응원 메시지 보내기';
+
+        }
+
+      }
+    );
+
+  </script>
+
+</body>
+</html>
